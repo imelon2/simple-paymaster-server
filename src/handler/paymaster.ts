@@ -45,15 +45,19 @@ export class PaymasterHandler {
     if (userOp.factory && userOp.factoryData) userOp.initCode = hexConcat([userOp.factory, userOp.factoryData ?? '']);
     if (!userOp.initCode) userOp.initCode = "0x";
 
+    console.log(2);
     const paymaster = await this.SimplePaymaster.getAddress();
     if (estimate) {
+      console.log(21);
       userOp.paymaster = paymaster;
       userOp.paymasterVerificationGasLimit = this.paymasterVerificationGasLimit;
       userOp.paymasterPostOpGasLimit = this.paymasterPostOpGasLimit;
-
+      
+      console.log(22);
       const accountGasLimits = packUint(userOp.verificationGasLimit, userOp.callGasLimit);
       const gasFees = packUint(userOp.maxPriorityFeePerGas, userOp.maxFeePerGas);
-
+      
+      console.log(23);
       const packedUserOp: PackedUserOperationStruct = {
         sender: userOp.sender,
         nonce: userOp.nonce,
@@ -65,10 +69,13 @@ export class PaymasterHandler {
         paymasterAndData: this.packPaymasterData(paymaster, this.paymasterVerificationGasLimit, this.paymasterPostOpGasLimit),
         signature: userOp.signature,
       };
+      console.log(24);
       userOp.paymasterData = await this.encodePaymasterData(validUntil, validAfter, packedUserOp);
-
+      
+      console.log(25);
       const response = await bundler.send('eth_estimateUserOperationGas', [userOp, entryPoint]);
 
+      console.log(3);
       // estimated gas
       userOp.verificationGasLimit = response.verificationGasLimit;
       userOp.callGasLimit = response.callGasLimit;

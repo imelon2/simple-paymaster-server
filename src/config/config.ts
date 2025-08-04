@@ -1,6 +1,6 @@
 import { cleanEnv, email, str, json, url, makeValidator, EnvError, port, num } from 'envalid';
-import dotenv from 'dotenv';
 import { isAddress, isHexString } from 'ethers';
+import dotenv from 'dotenv';
 dotenv.config();
 
 const address = makeValidator<string>((input: string) => {
@@ -22,5 +22,5 @@ export const env = cleanEnv(process.env, {
   PAYMASTER_PK: hex(),
   PORT: port({ default: 3500 }),
   CHAIN_ID:num({ default: 1337 }),
-  NODE_ENV: str({ choices: ['development', 'test', 'production', 'staging'] }),
+  VERBOSITY: str({ choices: ['error', 'warn', 'info', 'debug','verbose'] }),
 });

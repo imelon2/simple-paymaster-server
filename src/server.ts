@@ -5,14 +5,14 @@ declare global {
     }
   }
 }
-
-import { ethers } from 'ethers';
+import { ethers, isHexString } from 'ethers';
 import express, { NextFunction, Request, Response } from 'express';
 import morgan, { format } from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 import { PaymasterHandler } from './handler/paymaster';
 import { logger } from './config/winstom';
 import { env } from './config/config';
+import { PaymasterDataRequestDTO } from './domain/PaymasterDataRequestDTO';
 
 const app = express();
 
@@ -76,8 +76,9 @@ function pm_logger(req: Request, res: Response, next: NextFunction) {
 
 function pm_checkChainId(req: Request, res: Response, next: NextFunction) {
   const { method, params } = req.body;
-  const chainId = params[2];
+  let chainId = params[2];
 
+  chainId = isHexString(chainId) ? ethers.toNumber(chainId) : chainId;
   if (chainId == env.CHAIN_ID) {
     next()
   } else {
@@ -117,18 +118,15 @@ app.post('/', [pm_logger,pm_checkChainId], async (req: Request, res: Response) =
       }
     }
 
-    
-    const userOp = body.params?.[0];
-    const entryPoint = body.params?.[1];
-    const chainId = body.params?.[2];
-    const context = body.params?.[3];
+    const {userOp, entryPoint, chainId, context} = PaymasterDataRequestDTO.of(body)
+
 
     const date = new Date();
     const _validUntil = context?.validUntil ? new Date(context.validUntil) : date;
     const _validAfter = context?.validAfter ? new Date(context.validAfter) : date;
     const validUntil = Number((_validUntil.valueOf() / 1000).toFixed(0)) + 600;
     const validAfter = Number((_validAfter.valueOf() / 1000).toFixed(0)) - 60;
-
+    
     const result = await paymasterHandler.signV7(validUntil, validAfter, userOp, bundler, entryPoint, estimate);
 
     if (body.jsonrpc) return res.status(200).send({ jsonrpc: body.jsonrpc, id: body.id, result, error: null });

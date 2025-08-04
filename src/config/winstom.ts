@@ -26,7 +26,7 @@ const logFormat = printf(({ level, message, label, timestamp }) => {
 });
 
 export const logger = winston.createLogger({
-  level: 'debug',
+  level: process.env.VERBOSITY || "debug",
   format: combine(
     timestamp({
       format: 'MM-DD|HH:mm:ss.SSS',

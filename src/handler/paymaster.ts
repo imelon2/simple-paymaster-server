@@ -27,7 +27,7 @@ export class PaymasterHandler {
 
   async encodePaymasterData(validUntil: number, validAfter: number, packedUserOp: PackedUserOperationStruct) {
     const hash = await this.SimplePaymaster.getHash(packedUserOp, validUntil, validAfter);
-    const sig = await this.PaymasterWallet.signMessage(ethers.toBeArray(hash)) // 시이이이발려나 0x는 알아서쫌 뺴 개 ㅇ씨ㅣㅇ빌아바지ㅏ리머라니
+    const sig = await this.PaymasterWallet.signMessage(ethers.toBeArray(hash))
 
     const coder = new AbiCoder();
     return hexConcat([coder.encode(['uint48', 'uint48'], [validUntil, validAfter]), sig]);

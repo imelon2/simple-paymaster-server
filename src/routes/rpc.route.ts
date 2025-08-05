@@ -28,65 +28,65 @@ const wallet = new ethers.Wallet(PAYMASTER_PK, provider);
 const paymasterHandler = new PaymasterHandler(PAYMASTER_ADDRESS, wallet);
 
 const methodMap = {
-  'pm_getPaymasterData': async (req: Request, res: Response) => {
+  pm_getPaymasterData: async (req: Request, res: Response) => {
     try {
-      const { params } = req.body;
+      const { params, id } = req.body;
       const pmDTO = PaymasterDataRequestDTO.of(params);
       const { userOp, entryPoint, chainId } = pmDTO;
 
       if (ENTRYPOINT_ADDRESS !== entryPoint) {
-        return res.json(rpcError(-32000, 'Unsupported Entrypoint version received', req.id));
+        return res.json(rpcError(-32000, 'Unsupported Entrypoint version received', id));
       }
       if (CHAIN_ID !== ethers.toNumber(chainId)) {
-        return res.json(rpcError(-32000, 'Unsupported Chain id received', req.id));
+        return res.json(rpcError(-32000, 'Unsupported Chain id received', id));
       }
 
       const { validUntil, validAfter } = pmDTO.getExpiration(TIME_RANGE_UNTIL, TIME_RANGE_AFTER);
       const data = await paymasterHandler.signV7(validUntil, validAfter, userOp, bundler, entryPoint, false);
 
       const result = {
-        // sponsor: { name: 'sponsorName', icon: 'sponsorImage' },
+        sponsor: { name: 'sponsorName', icon: 'sponsorImage' },
         ...data,
       };
-      return res.json(rpcReturn(result, req.id));
+      return res.send(rpcReturn(result, id));
     } catch (error) {
       throw error;
     }
   },
-  'pm_getPaymasterStubData': async (req: Request, res: Response) => {
+  pm_getPaymasterStubData: async (req: Request, res: Response) => {
     try {
-      const { params } = req.body;
+      const { params, id } = req.body;
       const pmDTO = PaymasterDataRequestDTO.of(params);
       const { userOp, entryPoint, chainId } = pmDTO;
 
       if (ENTRYPOINT_ADDRESS !== entryPoint) {
-        return res.json(rpcError(-32000, 'Unsupported Entrypoint version received', req.body.id));
+        return res.json(rpcError(-32000, 'Unsupported Entrypoint version received', id));
       }
       if (CHAIN_ID !== ethers.toNumber(chainId)) {
-        return res.json(rpcError(-32000, 'Unsupported Chain id received', req.id));
+        return res.json(rpcError(-32000, 'Unsupported Chain id received', id));
       }
 
       const { validUntil, validAfter } = pmDTO.getExpiration(TIME_RANGE_UNTIL, TIME_RANGE_AFTER);
       const result = await paymasterHandler.signV7(validUntil, validAfter, userOp, bundler, entryPoint, true);
 
-      return res.json(rpcReturn(result, req.id));
+      return res.send(rpcReturn(result, id));
     } catch (error) {
       throw error;
     }
   },
-  'pm_sponsorUserOperation': async (req: Request, res: Response) => {
-    return res.json(rpcError(-32000, 'Unsupported pm_sponsorUserOperation received', req.id));
+  pm_sponsorUserOperation: async (req: Request, res: Response) => {
+    return res.json(rpcError(-32000, 'Unsupported pm_sponsorUserOperation received', req.body.id));
   },
-  'pm_getERC20TokenQuotes': async (req: Request, res: Response) => {
-    return res.json(rpcError(-32000, 'Unsupported pm_getERC20TokenQuotes received', req.id));
+  pm_getERC20TokenQuotes: async (req: Request, res: Response) => {
+    return res.json(rpcError(-32000, 'Unsupported pm_getERC20TokenQuotes received', req.body.id));
   },
 };
 
 router.post('/', async (req: Request, res: Response) => {
-  const { method, id, jsonrpc,params } = req.body;
-  logger.info(`Served ${method}                           sender=${params[0].sender} id=${req.id}`);
-  logger.verbose(JSON.stringify({ method, id, jsonrpc,params }));
-  
+  const { method, id, jsonrpc, params } = req.body;
+  logger.info(`Served ${method}                           sender=${params[0].sender} id=${id}`);
+  logger.verbose(JSON.stringify({ method, id, jsonrpc, params }));
+
   if (!method || !(method in methodMap)) {
     return res.json(rpcError(-32601, 'Method not found', id));
   }
@@ -96,9 +96,9 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    await methodMap[method as MethodName](req, res);
+    return methodMap[method as MethodName](req, res);
   } catch (error) {
-    logger.debug(error)
+    logger.debug(error);
     if (error instanceof ZodError) {
       return res.json(rpcError(-32602, 'Invalid params', id, error.message));
     }
@@ -112,7 +112,7 @@ function rpcError(code: number, message: string, id: any = null, data?: any) {
 }
 
 function rpcReturn(result: any, id: any = null, data?: any) {
-  return { jsonrpc: '2.0', result: { result, data }, id };
+  return { jsonrpc: '2.0', result: result, id };
 }
 
 export default router;

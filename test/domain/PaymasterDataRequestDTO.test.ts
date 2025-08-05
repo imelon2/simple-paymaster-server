@@ -1,3 +1,4 @@
+import { ZodError } from 'zod';
 import { PaymasterDataRequestDTO } from '../../src/domain/PaymasterDataRequestDTO';
 
 describe('PaymasterDataRequestDTO', () => {
@@ -13,7 +14,7 @@ describe('PaymasterDataRequestDTO', () => {
         nonce: '0x19872f0f19e0000000000000000',
         signature:
           '0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c',
-        sender: '0xa3aBDC7f6334CD3EE466A115f30522377787c0241',
+        sender: '0xa3aBDC7f6334CD3EE466A115f30522377787c024111',
         callGasLimit: '0x0',
         verificationGasLimit: '0x0',
         preVerificationGas: '0x0',
@@ -30,7 +31,12 @@ describe('PaymasterDataRequestDTO', () => {
 
       expect(data).toBeInstanceOf(PaymasterDataRequestDTO);
     } catch (error) {
-      console.error(error);
+      if (error instanceof ZodError) {
+        console.error(error.message);
+        
+        
+      }
+      console.error();
     }
   });
 });

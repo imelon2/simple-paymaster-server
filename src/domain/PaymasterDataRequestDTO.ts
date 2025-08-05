@@ -1,42 +1,32 @@
 import * as z from 'zod';
 import { UserOperation } from '../type/types';
 
-export class PaymasterDataRequestDTO {
+type PaymasterParams = {
   userOp: UserOperation;
   entryPoint: `0x${string}`;
   chainId: `0x${string}`;
   context: Record<string, any>;
+};
 
-  schema = z.object({
-    userOp: z.object({
-      sender: z.custom<`0x${string}`>(),
-      factory: z.custom<`0x${string}`>(),
-      factoryData: z.custom<`0x${string}`>(),
-      callData: z.custom<`0x${string}`>(),
-      nonce: z.custom<`0x${string}`>(),
-      signature: z.custom<`0x${string}`>(),
-      callGasLimit: z.custom<`0x${string}`>(),
-      verificationGasLimit: z.custom<`0x${string}`>(),
-      preVerificationGas: z.custom<`0x${string}`>(),
-      maxFeePerGas: z.custom<`0x${string}`>().default("0x0"),
-      maxPriorityFeePerGas: z.custom<`0x${string}`>().default("0x0"),
-    }),
-    entryPoint: z.custom<`0x${string}`>(),
-    chainId: z.custom<`0x${string}`>(),
-    context: z.object(),
-  });
+export class PaymasterDataRequestDTO {
+  userOp: UserOperation;
+  entryPoint: string;
+  chainId: string;
+  context: Record<string, any>;
 
   constructor() {}
 
-  static of(body: any) {
+  static of(params: any) {
     const dto = new PaymasterDataRequestDTO();
 
-    dto.userOp = body.params[0];
-    dto.entryPoint = body.params[1];
-    dto.chainId = body.params[2];
-    dto.context = body.params[3];
+    const _params:PaymasterParams = {
+      userOp: params[0],
+      entryPoint: params[1],
+      chainId: params[2],
+      context: params[3],
+    };
 
-    const {userOp,entryPoint,chainId,context} = dto.validation();
+    const { userOp, entryPoint, chainId, context } = PaymasterDataRequestDTO.validation(_params);
 
     dto.userOp = userOp;
     dto.entryPoint = entryPoint;
@@ -45,12 +35,44 @@ export class PaymasterDataRequestDTO {
     return dto;
   }
 
-  validation() {
-    return this.schema.parse({
-      userOp:this.userOp,
-      entryPoint:this.entryPoint,
-      chainId:this.chainId,
-      context:this.context,
-    })
+  getExpiration(until: number, after: number) {
+    const date = new Date();
+    const _validUntil = this.context?.validUntil ? new Date(this.context.validUntil) : date;
+    const _validAfter = this.context?.validAfter ? new Date(this.context.validAfter) : date;
+    const validUntil = Number((_validUntil.valueOf() / 1000).toFixed(0)) + until;
+    const validAfter = Number((_validAfter.valueOf() / 1000).toFixed(0)) - after;
+
+    return {
+      validUntil,
+      validAfter,
+    };
+  }
+
+  static validation(params:PaymasterParams) {
+    const paramSchema = z.object({
+      userOp: z.object({
+        sender: z.string().startsWith("0x").length(42),
+        factory: z.string().optional(),
+        factoryData: z.string().optional(),
+        callData: z.string(),
+        nonce: z.string(),
+        signature: z.string(),
+        callGasLimit: z.string(),
+        verificationGasLimit: z.string(),
+        preVerificationGas: z.string(),
+        maxFeePerGas: z.string().default("0x0"),
+        maxPriorityFeePerGas: z.string().default("0x0"),
+      }),
+      entryPoint: z.string(),
+      chainId: z.string(),
+      context: z.object(),
+    });
+
+    return paramSchema.parse({
+      userOp: params.userOp,
+      entryPoint: params.entryPoint,
+      chainId: params.chainId,
+      context: params.context,
+    });
   }
 }

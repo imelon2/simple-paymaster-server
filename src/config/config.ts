@@ -19,8 +19,11 @@ export const env = cleanEnv(process.env, {
   PROVIDER_URL: url(),
   BUNDLER_URL: url(),
   PAYMASTER_ADDRESS: address(),
+  ENTRYPOINT_ADDRESS: address(),
   PAYMASTER_PK: hex(),
   PORT: port({ default: 3500 }),
   CHAIN_ID:num({ default: 1337 }),
+  TIME_RANGE_UNTIL:num({ default: 600 }),
+  TIME_RANGE_AFTER:num({ default: 60 }),
   VERBOSITY: str({ choices: ['error', 'warn', 'info', 'debug','verbose'] }),
 });

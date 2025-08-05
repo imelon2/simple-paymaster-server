@@ -12,31 +12,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { PaymasterHandler } from './handler/paymaster';
 import { logger } from './config/winstom';
 import { env } from './config/config';
+import rpcRoutes from './routes/rpc.route';
 import { PaymasterDataRequestDTO } from './domain/PaymasterDataRequestDTO';
 
 const app = express();
 
 app.use(express.json());
+app.set("env",env)
 
-// app.use(morgan((tokens, req, res) => {
-//   // 필요한 request 데이터 추출
-//   const logData = {
-//     method: tokens.method(req, res),
-//     url: tokens.url(req, res),
-//     status: tokens.status(req, res),
-//     'response-time': tokens['response-time'](req, res) + ' ms',
-//     body: req.body,             // JSON body (app.use(express.json()) 필요)
-//     query: req.query,
-//     headers: req.headers,
-//     ip: req.ip
-//   };
-
-//   // winston으로 로그 전송 (JSON 전체)
-//   logger.info('API Request :' + JSON.stringify(logData,null,2));
-
-//   // morgan은 빈 문자열 리턴 (console에 별도 로그 출력하지 않음)
-//   return '';
-// }));
 
 const bundlerUrl = env.BUNDLER_URL;
 const ProviderUrl = env.PROVIDER_URL;
@@ -48,6 +31,8 @@ const bundler = new ethers.JsonRpcProvider(bundlerUrl);
 const wallet = new ethers.Wallet(paymasterPk, provider);
 
 const paymasterHandler = new PaymasterHandler(paymasterAddress, wallet);
+
+
 
 function pm_logger(req: Request, res: Response, next: NextFunction) {
   req.id = uuidv4();
@@ -74,69 +59,53 @@ function pm_logger(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-function pm_checkChainId(req: Request, res: Response, next: NextFunction) {
-  const { method, params } = req.body;
-  let chainId = params[2];
+app.use('/',rpcRoutes)
 
-  chainId = isHexString(chainId) ? ethers.toNumber(chainId) : chainId;
-  if (chainId == env.CHAIN_ID) {
-    next()
-  } else {
-    return res.status(400).json({ error: 'Unsupported chain id' });
-  }
+// app.post('/', [pm_logger], async (req: Request, res: Response) => {
+//   try {
+//     const body = req.body;
+//     const method = body.method;
+//     const jsonrpc = body.jsonrpc;
+//     const id = body.id;
     
-}
+//     let sponsorDetails = false,
+//       estimate = true;
 
-
-app.post('/', [pm_logger,pm_checkChainId], async (req: Request, res: Response) => {
-  try {
-    const query = req.query;
-    const body = req.body;
-    const method = body.method;
-
-    let sponsorDetails = false,
-      estimate = true;
-
-    if (method) {
-      switch (method) {
-        case 'pm_getPaymasterData':
-          estimate = false;
-          sponsorDetails = true;
-          break;
-        case 'pm_getPaymasterStubData':
-          break;
-        case 'pm_sponsorUserOperation':
-          return res.status(400).json({
-            error: 'pm_sponsorUserOperation Unsupported method name received',
-          });
-        case 'pm_getERC20TokenQuotes':
-          return res.status(400).json({
-            error: 'pm_getERC20TokenQuotes Unsupported method name received',
-          });
-        default:
-          return res.status(400).json({ error: 'Unsupported method name received' });
-      }
-    }
-
-    const {userOp, entryPoint, chainId, context} = PaymasterDataRequestDTO.of(body)
-
-
-    const date = new Date();
-    const _validUntil = context?.validUntil ? new Date(context.validUntil) : date;
-    const _validAfter = context?.validAfter ? new Date(context.validAfter) : date;
-    const validUntil = Number((_validUntil.valueOf() / 1000).toFixed(0)) + 600;
-    const validAfter = Number((_validAfter.valueOf() / 1000).toFixed(0)) - 60;
+//     if (method) {
+//       switch (method) {
+//         case 'pm_getPaymasterData':
+//           estimate = false;
+//           sponsorDetails = true;
+//           break;
+//         case 'pm_getPaymasterStubData':
+//           break;
+//         case 'pm_sponsorUserOperation':
+//           return res.status(400).json({
+//             error: 'pm_sponsorUserOperation Unsupported method name received',
+//           });
+//         case 'pm_getERC20TokenQuotes':
+//           return res.status(400).json({
+//             error: 'pm_getERC20TokenQuotes Unsupported method name received',
+//           });
+//         default:
+//           return res.status(400).json({ error: 'Unsupported method name received' });
+//       }
+//     }
     
-    const result = await paymasterHandler.signV7(validUntil, validAfter, userOp, bundler, entryPoint, estimate);
+//     const pmDTO = PaymasterDataRequestDTO.of(body.params)
+//     const {userOp, entryPoint, chainId, context} = pmDTO
+//     const {validUntil, validAfter} = pmDTO.getExpiration(env.TIME_RANGE_UNTIL,env.TIME_RANGE_AFTER)
+    
+//     const result = await paymasterHandler.signV7(validUntil, validAfter, userOp, bundler, entryPoint, estimate);
 
-    if (body.jsonrpc) return res.status(200).send({ jsonrpc: body.jsonrpc, id: body.id, result, error: null });
+//     if (body.jsonrpc) return res.status(200).send({ jsonrpc: body.jsonrpc, id: body.id, result, error: null });
 
-    return res.send(result);
-  } catch (error) {
-    logger.debug(error)
-    return res.status(400).send(error);
-  }
-});
+//     return res.send(result);
+//   } catch (error) {
+//     logger.debug(error)
+//     return res.status(400).send(error);
+//   }
+// });
 
 app.listen(env.PORT, () => {
   logger.info(`Server listening on port ${env.PORT}`);

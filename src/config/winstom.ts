@@ -1,4 +1,5 @@
 import winston from 'winston';
+import { env } from './config';
 
 const { printf, combine, timestamp, label } = winston.format;
 
@@ -12,21 +13,34 @@ enum LEVELS {
   silly,
 }
 
-const logDir = `${process.cwd()}/logs`;
+function kvString(meta = {}) {
+  return Object.entries(meta)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(' ');
+}
 
-const logFormat = printf(({ level, message, label, timestamp }) => {
-  let upperLevel = level.toUpperCase();
+const MSG_WIDTH = 48;
+
+
+const logFormat = printf(({ level, message, label, timestamp, ...meta }) => {
+  let upperLevel = level.toUpperCase()
   if (upperLevel.length == 4) {
     upperLevel += '   ';
   }
   if (upperLevel.length == 5) {
     upperLevel += '  ';
   }
-  return `${upperLevel}[${timestamp}] ${label}:: ${message}`; // 날짜 [시스템이름] 로그레벨 메세지
+
+  const paramStr = kvString(meta);
+  const msgPart = (message as any).length > MSG_WIDTH
+    ? (message as any).slice(0, MSG_WIDTH)
+    : (message as any).padEnd(MSG_WIDTH, ' ');
+
+  return `${upperLevel}[${timestamp}] ${label}:: ${msgPart}${paramStr}`; // 날짜 [시스템이름] 로그레벨 메세지
 });
 
 export const logger = winston.createLogger({
-  level: process.env.VERBOSITY || "debug",
+  level: env.VERBOSITY || "debug",
   format: combine(
     timestamp({
       format: 'MM-DD|HH:mm:ss.SSS',

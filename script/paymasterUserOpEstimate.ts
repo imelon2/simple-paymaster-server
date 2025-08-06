@@ -49,9 +49,9 @@ async function main() {
    * Set up tx: set transaction minimal-data
    */
   const to = '0x0000000000000000000000000000000000004337';
-  const value = 1n; // 1wei
-  console.log('send UserOp to Bundler.... ');
-  const hash = await bundlerClient.estimateUserOperationGas({
+
+  console.log('Estimate UserOp to Bundler.... ');
+  const result = await bundlerClient.estimateUserOperationGas({
     account,
     paymasterContext: {
       'policy-id': '1234-5678-90',
@@ -63,35 +63,7 @@ async function main() {
       },
     ],
   });
-console.log(hash);
-
-  // console.log('send UserOp to Bundler.... ');
-  // const hash = await bundlerClient.sendUserOperation({
-  //   account,
-  //   paymasterContext: {
-  //     'policy-id': '1234-5678-90',
-  //   },
-  //   calls: [
-  //     {
-  //       to: to,
-  //       value: 0n,
-  //     },
-  //   ],
-  // });
-  // console.log('wait tx......');
-  // console.log();
-  // const receipt = await bundlerClient.waitForUserOperationReceipt({
-  //   hash,
-  // });
-  // const userOp = await bundlerClient.getUserOperation({ hash });
-  // console.log(`UserOpHash : ${hash}`);
-  // console.log(`Transaction Hash : ${userOp.transactionHash}`);
-  // console.log(
-  //   `UserOp executed in ${receipt.receipt.blockNumber.toString()} block number | status : ${
-  //     receipt.success ? 'success' : 'fail'
-  //   }`
-  // );
-  // console.log();
+console.log(result);
 }
 
 main().then(() => {

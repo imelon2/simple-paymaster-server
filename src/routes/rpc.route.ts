@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import { PaymasterDataRequestDTO } from '../domain/PaymasterDataRequestDTO';
 import { ZodError } from 'zod';
 import { env } from '../config/config';
@@ -30,7 +30,7 @@ const paymasterHandler = new PaymasterHandler(PAYMASTER_ADDRESS, wallet);
 const methodMap = {
   pm_getPaymasterData: async (req: Request, res: Response) => {
     try {
-      const { params, id } = req.body;
+      const { params, id,method } = req.body;
       const pmDTO = PaymasterDataRequestDTO.of(params);
       const { userOp, entryPoint, chainId } = pmDTO;
 
@@ -48,6 +48,7 @@ const methodMap = {
         sponsor: { name: 'sponsorName', icon: 'sponsorImage' },
         ...data,
       };
+      logger.debug(`Response ${method}`,{response:JSON.stringify(rpcReturn(result, id))})
       return res.send(rpcReturn(result, id));
     } catch (error) {
       throw error;
@@ -55,7 +56,7 @@ const methodMap = {
   },
   pm_getPaymasterStubData: async (req: Request, res: Response) => {
     try {
-      const { params, id } = req.body;
+      const { params, id,method } = req.body;
       const pmDTO = PaymasterDataRequestDTO.of(params);
       const { userOp, entryPoint, chainId } = pmDTO;
 
@@ -69,6 +70,7 @@ const methodMap = {
       const { validUntil, validAfter } = pmDTO.getExpiration(TIME_RANGE_UNTIL, TIME_RANGE_AFTER);
       const result = await paymasterHandler.signV7(validUntil, validAfter, userOp, bundler, entryPoint, true);
 
+      logger.debug(`Response ${method}`,{response:JSON.stringify(rpcReturn(result, id))})
       return res.send(rpcReturn(result, id));
     } catch (error) {
       throw error;
@@ -84,8 +86,8 @@ const methodMap = {
 
 router.post('/', async (req: Request, res: Response) => {
   const { method, id, jsonrpc, params } = req.body;
-  logger.info(`Served ${method}                           sender=${params[0].sender} id=${id}`);
-  logger.verbose(JSON.stringify({ method, id, jsonrpc, params }));
+  logger.info(`Served ${method}`,{sender:params[0].sender,id:id});
+  logger.verbose(`Served ${method}`,{"body":JSON.stringify({ method, id, jsonrpc, params })});
 
   if (!method || !(method in methodMap)) {
     return res.json(rpcError(-32601, 'Method not found', id));

@@ -1,10 +1,10 @@
-# simple paymaster-server
+# [⚠️ DEPRECATED] simple paymaster server
+![Deprecated](https://img.shields.io/badge/status-deprecated-red)
+
+> **This repository is no longer maintained.**
+> Please use [erc4337-paymaster-server](https://github.com/imelon2/erc4337-paymaster-server) instead. Refactored the backend architecture from Express.js to NestJS to improve scalability, maintainability, and modular design.
 
 </br>
-
-<div align="center">
-    <img src="./img/intro.png" width="45%"/>
-</div>
 
 </br>
 
